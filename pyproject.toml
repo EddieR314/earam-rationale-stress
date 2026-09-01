@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "earam-rationale-stress"
+version = "0.2.1"
+description = "Controlled rationale corruption and reliability filtering for EARAM"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Walter"}]
+dependencies = []
+
+[project.optional-dependencies]
+probe = ["scikit-learn>=1.2"]
+gpu = ["torch>=1.13", "transformers>=4.28", "pillow>=9"]
+
+[project.scripts]
+earam-stress = "earam_stress.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,5 @@
+condition,mean_macro_f1,delta_from_clean,replicates,notes
+Clean rationale,0.9193,0.0000,3,Three model seeds
+Prefix oracle verdict flip 50%,0.9207,0.0014,3,Incorrect verdict prepended to 50.49% of rationale fields
+No rationale,0.9108,-0.0086,3,Both rationale fields replaced with empty text
+Shuffled rationale 100%,0.9054,-0.0139,9,Three model seeds by three shuffle permutations

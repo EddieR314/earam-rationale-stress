@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import csv
 from pathlib import Path
 
 from earam_stress.io import export_earam, import_earam, read_lines
@@ -27,6 +28,20 @@ RECORDS = [
 
 
 class ToolkitTests(unittest.TestCase):
+    def test_pilot_summary_deltas_are_consistent(self):
+        summary = Path(__file__).resolve().parents[1] / "docs" / "results_summary.csv"
+        with summary.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        self.assertEqual(len(rows), 4)
+        clean = float(rows[0]["mean_macro_f1"])
+        self.assertEqual(rows[0]["condition"], "Clean rationale")
+        for row in rows:
+            observed = float(row["mean_macro_f1"]) - clean
+            reported = float(row["delta_from_clean"])
+            # Displayed means are rounded to four decimals, while deltas were
+            # computed from the unrounded run means.
+            self.assertLessEqual(abs(observed - reported), 0.00011)
+
     def test_all_perturbations_are_deterministic_and_change_text(self):
         names = ("evidence_deletion", "conclusion_flip", "unsupported_claim", "contradiction", "irrelevant")
         for name in names:

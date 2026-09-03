@@ -2,13 +2,24 @@
 """Generate the presentation figure for the internal rationale stress test."""
 
 from pathlib import Path
+import csv
 
 import matplotlib.pyplot as plt
 
 
 def main() -> None:
-    labels = ["Wrong verdict\n(50% fields)", "No rationale", "Shuffled rationale\n(3 × 3 runs)"]
-    changes = [0.14, -0.86, -1.39]
+    root = Path(__file__).resolve().parents[1]
+    summary = root / "docs" / "results_summary.csv"
+    with summary.open(encoding="utf-8", newline="") as handle:
+        rows = {row["condition"]: row for row in csv.DictReader(handle)}
+
+    conditions = [
+        ("Prefix oracle verdict flip 50%", "Wrong verdict\n(50% fields)"),
+        ("No rationale", "No rationale"),
+        ("Shuffled rationale 100%", "Shuffled rationale\n(3 × 3 runs)"),
+    ]
+    labels = [label for _, label in conditions]
+    changes = [100 * float(rows[name]["delta_from_clean"]) for name, _ in conditions]
     colors = ["#8492a6", "#f0a35e", "#d85b5b"]
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 13})
@@ -25,14 +36,14 @@ def main() -> None:
     fig.text(
         0.09,
         0.94,
-        "Misaligned rationales hurt more than missing rationales",
+        "Cross-sample rationale mismatch hurt more than rationale removal",
         weight="bold",
         fontsize=20,
     )
     fig.text(
         0.09,
         0.905,
-        "Internal low-memory EARAM-style experiment; clean mean Macro-F1 = 0.9193",
+        "Preliminary internal EARAM-style experiment; clean mean Macro-F1 = 0.9193",
         color="#5c677d",
         fontsize=12,
     )
@@ -62,7 +73,7 @@ def main() -> None:
     )
     fig.tight_layout(rect=(0.04, 0.07, 0.98, 0.85))
 
-    output = Path(__file__).resolve().parents[1] / "docs" / "rationale_reliability_results.png"
+    output = root / "docs" / "rationale_reliability_results.png"
     fig.savefig(output, bbox_inches="tight")
     print(output)
 

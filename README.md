@@ -1,14 +1,29 @@
 # EARAM Rationale Reliability Stress Test
 
-A small, reproducible extension to **EARAM** (*From Predictions to Analyses: Rationale-Augmented Fake News Detection with Large Vision-Language Models*). It tests how EARAM-style detectors respond when LVLM analyses are incomplete, irrelevant, contradictory, unsupported, or end with a flipped conclusion.
+![Macro-F1 change under rationale interventions](docs/rationale_reliability_results.png)
 
-This repository does **not** claim to reproduce EARAM's published numbers. It provides the experiment harness needed to create clean/corrupted/filtered rationale files, after which the official EARAM training script can be run under each condition.
+A reproducible reliability audit of **EARAM** (*From Predictions to Analyses: Rationale-Augmented Fake News Detection with Large Vision-Language Models*). It tests how an EARAM-style detector responds when LVLM analyses are absent, assigned to the wrong sample, incomplete, irrelevant, contradictory, unsupported, or given a flipped conclusion.
+
+This repository does **not** claim to reproduce EARAM's published numbers. It contains a low-memory execution path for the released VLR architecture, a controlled rationale-intervention toolkit, and preliminary internal results on the 2,558 MR2 rows for which both released rationale files are available.
+
+## Result in 30 seconds
+
+| Fixed-checkpoint condition | Mean test Macro-F1 | Change from clean |
+|---|---:|---:|
+| Clean rationales | 0.9193 | — |
+| Incorrect verdict prepended to 50% of rationale fields | 0.9207 | +0.0014 |
+| Both rationales removed | 0.9108 | −0.0086 |
+| Rationale pairs shuffled across samples | 0.9054 | **−0.0139** |
+
+**Preliminary finding.** In this internal setup, cross-sample rationale mismatch was more damaging than removing both rationales. A short incorrect verdict did not reduce mean performance. The result is consistent with the model using a modest amount of sample-specific rationale information, and inconsistent with a simple strategy of copying one local verdict sentence.
+
+**Important boundary.** Random cross-sample shuffling can change both semantic alignment and label-associated signals. The next decisive control is **within-label shuffling**, followed by a lightweight image-caption-rationale alignment gate. Until then, the result is evidence of sensitivity to cross-sample mismatch—not proof that semantic misalignment alone caused the drop.
 
 ## Research question
 
 > How robust is rationale-augmented fake-news detection when the generated rationales are unreliable, and can a lightweight pre-filter reduce the damage?
 
-## Internal pilot result
+## Internal pilot protocol
 
 On the 2,558 public MR2 training rows, we trained three low-memory EARAM-style models on
 stratified 80/10/10 splits (seeds 13, 42, and 97), then evaluated frozen clean checkpoints under
@@ -18,11 +33,17 @@ reduced it to **0.9054** on average across three model seeds and three shuffle p
 (−0.0139). A short incorrect verdict prepended to 50% of rationale fields did not reduce mean
 Macro-F1.
 
-The bounded interpretation is that this implementation uses a modest amount of sample-aligned,
-distributed rationale information, but does not simply follow a local verdict sentence. Misaligned
-rationales were more harmful than absent rationales. These are internal EARAM-style results—not a
-reproduction of the paper's official MR2 result and not a claim about the official model generally.
-See [`docs/LUO_LAB_ONE_PAGE.md`](docs/LUO_LAB_ONE_PAGE.md) for the concise bilingual report.
+The shuffled result averages nine evaluations: three independently trained models × three shuffle
+permutations. These are internal EARAM-style results—not a reproduction of the paper's official MR2
+result and not a claim about the official model generally.
+
+Evidence and scope:
+
+- [`docs/LUO_LAB_ONE_PAGE.md`](docs/LUO_LAB_ONE_PAGE.md): concise bilingual research brief.
+- [`docs/results_summary.csv`](docs/results_summary.csv): machine-readable aggregate results.
+- [`docs/PILOT_PROVENANCE.md`](docs/PILOT_PROVENANCE.md): protocol, available evidence, and missing artifacts.
+- [`RESULTS.md`](RESULTS.md): EARAM-style pilot plus the earlier text-only feasibility diagnostic.
+- [`EARAM_REPRODUCTION_AUDIT.md`](EARAM_REPRODUCTION_AUDIT.md): public-code audit and reproduction boundary.
 
 ## What is implemented
 

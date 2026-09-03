@@ -1,4 +1,30 @@
-# Initial Results
+# Results
+
+## EARAM-style fixed-checkpoint pilot
+
+Three low-memory EARAM-style models were trained on stratified 80/10/10 splits of the 2,558 MR2
+rows for which both released rationales are available. Model seeds were 13, 42, and 97. CLIP-Large
+was frozen and its token features were cached in FP16 so that the released VLR architecture could
+run on an RTX 5060 Laptop GPU with 8 GB VRAM.
+
+| Condition | Mean test Macro-F1 | Change from clean |
+|---|---:|---:|
+| Clean rationales | 0.9193 | — |
+| Incorrect verdict prepended to 50% of rationale fields | 0.9207 | +0.0014 |
+| Both rationales removed | 0.9108 | −0.0086 |
+| Rationale pairs shuffled across samples | 0.9054 | −0.0139 |
+
+Every intervention was evaluated with the corresponding clean checkpoint fixed. The shuffled
+mean covers three model seeds × three independent permutations. The result supports a narrow claim:
+this implementation is sensitive to cross-sample rationale mismatch, and mismatch was more harmful
+than absence in the pilot. It does not yet isolate semantic misalignment from label-associated
+signals; within-label shuffling is the next required control.
+
+The original per-run outputs were not retained in this repository. See
+[`docs/PILOT_PROVENANCE.md`](docs/PILOT_PROVENANCE.md) for the audit status and required rerun
+archive. These values are preliminary internal results, not official EARAM reproduction numbers.
+
+## Earlier text-only feasibility diagnostic
 
 ## Status
 
@@ -58,18 +84,19 @@ errors.
 
 1. `MR2_en_test_analysis_2.txt` is required by the data loader but absent from the repository.
 2. `utils.py` hard-codes `cuda:3` and an author-local CLIP checkpoint path.
-3. The current environment has no CUDA device, PyTorch, or Transformers installation.
+3. The released training code requires portability changes for commodity GPUs and reproducible
+   validation-based checkpoint selection.
 
 A faithful EARAM result must wait for the missing second test rationale and a CLIP-capable GPU. It
 would be misleading to duplicate rationale 1 and call that a reproduction.
 
 The implemented continuation avoids the missing file by creating internal stratified 80/10/10
-splits from the 2,558 complete rows for seeds 13, 42, and 97. This enables an independent EARAM-style
-experiment but does not remove the GPU requirement.
+splits from the 2,558 complete rows for seeds 13, 42, and 97. That independent EARAM-style GPU
+experiment is reported at the top of this file; it remains distinct from the paper's official split.
 
-## Next experiment
+## Next experiment after the text-only diagnostic
 
-On a GPU machine, freeze the official clean EARAM checkpoint and evaluate the same perturbation
-matrix without retraining. Prioritize irrelevant-rationale replacement and evidence deletion. Add a
+Using the already implemented fixed-checkpoint path, prioritize within-label rationale shuffling,
+single-channel versus dual-channel corruption, and paired confidence intervals. Then add a
 cross-modal reliability head that scores each rationale against both CLIP image tokens and caption
 tokens, and compare it against the two failed text-only filters here.

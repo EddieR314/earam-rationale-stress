@@ -23,16 +23,18 @@ The shuffled result averages nine evaluations: three independently trained model
 independent rationale permutations. Mean drops for shuffle seeds 13, 42, and 97 were 0.0116,
 0.0129, and 0.0173 respectively.
 
-**Finding.** Sample-aligned rationales provide a modest but repeatable signal. Unrelated rationales
-are more harmful than no rationales, suggesting that incorrect analysis can weakly mislead the
-detector. However, a short explicit incorrect verdict did not reduce performance, so the model does
-not appear to simply copy a local conclusion; it may rely on distributed semantic features or
-attenuate the rationale branch during fusion.
+**Finding.** Cross-sample rationale mismatch is more harmful than removing the rationales entirely,
+suggesting that mismatched analysis can weakly mislead the detector. However, a short explicit
+incorrect verdict did not reduce performance, so the model does not appear to simply copy a local
+conclusion. One possible explanation is that it relies on distributed semantic features or
+attenuates the rationale branch during fusion. Because unrestricted shuffling may also alter label-associated signals, within-label
+shuffling is required before attributing the drop specifically to semantic misalignment.
 
 **Boundary.** This is a low-memory EARAM-style internal experiment. It is not an official-score
 reproduction: the public repository lacks the second official MR2 test rationale, and our split and
-cached-feature execution differ from the paper's evaluation. The result should be presented as a
-reproducible diagnostic, not as a general defect of EARAM.
+cached-feature execution differ from the paper's evaluation. This snapshot publishes the aggregate
+metrics and protocol, but the original per-run prediction files were not retained in the repository;
+the finding therefore remains preliminary until the runs are archived and independently audited.
 
 ## 中文摘要
 
@@ -47,9 +49,11 @@ reproducible diagnostic, not as a general defect of EARAM.
 rationale 随机分配给错误样本后，在 3 个模型种子 × 3 个 shuffle 种子的九次评估中平均下降
 0.0139。相比之下，向 50% rationale 开头加入与真实标签相反的短 verdict 并未降低平均性能。
 
-**结论。** 样本级语义对齐的 rationale 提供了较弱但可重复的有效信号；完整的错配分析比
-完全缺失更有害，说明错误 rationale 能轻微主动误导模型。但模型并不会简单服从一条局部
-verdict，更可能使用分布式语义特征，或在融合时降低 rationale 分支的权重。
+**结论。** 跨样本错配的 rationale 比完全缺失更有害，说明错配分析能轻微主动误导模型。
+这个结果不符合“模型只服从一条局部 verdict”的简单解释；一种可能是模型使用分布式语义
+特征，或在融合时降低 rationale 分支的权重。由于不受限的随机打乱也可能改变标签相关信号，还需要同标签内部
+shuffle，才能把下降进一步归因于语义错配本身。
 
 **边界。** 这是内部低显存 EARAM-style 实验，不是论文官方结果复现，也不能扩展为对官方
-EARAM 模型的一般性结论。
+EARAM 模型的一般性结论。当前仓库公开了汇总指标和实验协议，但最初的逐次预测文件没有
+保留在仓库中，因此该发现应视为 preliminary，待重新归档运行结果后再接受独立审计。

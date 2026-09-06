@@ -1,5 +1,7 @@
 # EARAM Rationale Reliability Stress Test
 
+[![Tests](https://github.com/EddieR314/earam-rationale-stress/actions/workflows/tests.yml/badge.svg)](https://github.com/EddieR314/earam-rationale-stress/actions/workflows/tests.yml)
+
 ![Macro-F1 change under rationale interventions](docs/rationale_reliability_results.png)
 
 A reproducible reliability audit of **EARAM** (*From Predictions to Analyses: Rationale-Augmented Fake News Detection with Large Vision-Language Models*). It tests how an EARAM-style detector responds when LVLM analyses are absent, assigned to the wrong sample, incomplete, irrelevant, contradictory, unsupported, or given a flipped conclusion.

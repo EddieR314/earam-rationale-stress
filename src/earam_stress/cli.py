@@ -4,8 +4,9 @@ import argparse
 import json
 from pathlib import Path
 
+from .conditions import SHUFFLE_MODES, build_rationale_shuffle_condition
 from .io import export_earam, import_earam, read_jsonl, write_jsonl
-from .metrics import classification_metrics, summarize_records
+from .metrics import classification_metrics, paired_bootstrap_macro_f1, summarize_records
 from .mr2 import prepare_mr2
 from .perturb import PERTURBERS, perturb_records
 from .probe import run_text_probe
@@ -69,6 +70,15 @@ def build_parser() -> argparse.ArgumentParser:
     predictions_parser.add_argument("--input", required=True, help="JSONL with label and prediction")
     predictions_parser.add_argument("--output")
 
+    compare_parser = subparsers.add_parser(
+        "compare-predictions", help="Compute a paired bootstrap Macro-F1 difference"
+    )
+    compare_parser.add_argument("--clean", required=True)
+    compare_parser.add_argument("--candidate", required=True)
+    compare_parser.add_argument("--samples", type=int, default=2_000)
+    compare_parser.add_argument("--seed", type=int, default=42)
+    compare_parser.add_argument("--output")
+
     mr2_parser = subparsers.add_parser(
         "prepare-mr2", help="Reconstruct EARAM's English binary MR2 subset"
     )
@@ -101,6 +111,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_parser = subparsers.add_parser("validate-split", help="Validate one generated seed split")
     validate_parser.add_argument("--split-dir", required=True)
+
+    shuffle_parser = subparsers.add_parser(
+        "shuffle-rationales", help="Create a fixed-point-free rationale-pair shuffle condition"
+    )
+    shuffle_parser.add_argument("--dataset-json", required=True)
+    shuffle_parser.add_argument("--analysis-1", required=True)
+    shuffle_parser.add_argument("--analysis-2", required=True)
+    shuffle_parser.add_argument("--output-dir", required=True)
+    shuffle_parser.add_argument("--seed", type=int, required=True)
+    shuffle_parser.add_argument("--mode", choices=SHUFFLE_MODES, default="within-label")
     return parser
 
 
@@ -174,6 +194,16 @@ def main(argv: list[str] | None = None) -> None:
             ),
             args.output,
         )
+    elif args.command == "compare-predictions":
+        emit(
+            paired_bootstrap_macro_f1(
+                read_jsonl(args.clean),
+                read_jsonl(args.candidate),
+                samples=args.samples,
+                seed=args.seed,
+            ),
+            args.output,
+        )
     elif args.command == "prepare-mr2":
         emit(
             prepare_mr2(
@@ -211,6 +241,18 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "validate-split":
         emit(validate_split_dir(args.split_dir), None)
+    elif args.command == "shuffle-rationales":
+        emit(
+            build_rationale_shuffle_condition(
+                args.dataset_json,
+                args.analysis_1,
+                args.analysis_2,
+                args.output_dir,
+                args.seed,
+                args.mode,
+            ),
+            None,
+        )
 
 
 if __name__ == "__main__":

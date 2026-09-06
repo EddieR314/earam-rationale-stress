@@ -35,6 +35,8 @@ EARAM uses two LVLM-generated analyses to augment multimodal fake-news detection
 
 - Reuse EARAM's original dataset split, preprocessing, model hyperparameters, and random seeds.
 - Change only the two rationale files between conditions.
+- Compare unrestricted cross-sample shuffle with fixed-point-free within-label pair shuffle; move
+  both rationale channels together and retain the donor manifest.
 - Run at least three seeds and report mean and standard deviation.
 - Tune the reliability threshold on development corruptions only; freeze it before test evaluation.
 

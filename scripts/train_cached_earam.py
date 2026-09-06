@@ -8,7 +8,10 @@ import importlib
 import json
 import random
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+from earam_stress.provenance import file_record, git_revision, runtime_record
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -100,6 +103,32 @@ def main() -> None:
     VLR = importlib.import_module("model").VLR
     split_manifest = json.loads((Path(args.split_dir) / "split_manifest.json").read_text(encoding="utf-8"))
 
+    output = Path(args.output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    feature_manifest = Path(args.feature_dir) / "manifest.json"
+    run_manifest = {
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "command": sys.argv,
+        "arguments": vars(args),
+        "code": {
+            "earam_rationale_stress_commit": git_revision(Path(__file__).resolve().parents[1]),
+            "earam_commit": git_revision(args.earam_repo),
+        },
+        "runtime": runtime_record(torch),
+        "inputs": {
+            "split_manifest": file_record(Path(args.split_dir) / "split_manifest.json"),
+            "feature_manifest": file_record(feature_manifest) if feature_manifest.is_file() else None,
+            "checkpoint_in": file_record(args.checkpoint_in) if args.checkpoint_in else None,
+        },
+    }
+
+    def save_run_manifest() -> None:
+        (output / "run_manifest.json").write_text(
+            json.dumps(run_manifest, indent=2) + "\n", encoding="utf-8"
+        )
+
+    save_run_manifest()
+
     class CachedDataset(Dataset):
         def __init__(self, split: str):
             self.source_ids = split_manifest[split]["source_ids"]
@@ -134,8 +163,6 @@ def main() -> None:
     loss_weights = (0.7, 0.15, 0.15)
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
-    output = Path(args.output_dir)
-    output.mkdir(parents=True, exist_ok=True)
     checkpoint = output / "best.pt"
     history = []
 
@@ -185,6 +212,11 @@ def main() -> None:
         (output / "result.json").write_text(
             json.dumps(result, indent=2) + "\n", encoding="utf-8"
         )
+        run_manifest["artifacts"] = {
+            "result": file_record(output / "result.json"),
+            "test_predictions": file_record(output / "test_predictions.jsonl"),
+        }
+        save_run_manifest()
         print(json.dumps(result, indent=2))
         return
 
@@ -234,6 +266,12 @@ def main() -> None:
         "inputs": input_report,
     }
     (output / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    run_manifest["artifacts"] = {
+        "checkpoint": file_record(checkpoint),
+        "result": file_record(output / "result.json"),
+        "test_predictions": file_record(output / "test_predictions.jsonl"),
+    }
+    save_run_manifest()
     print(json.dumps(result, indent=2))
 
 

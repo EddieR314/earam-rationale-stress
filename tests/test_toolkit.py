@@ -1,12 +1,15 @@
 import tempfile
 import unittest
 import csv
+import json
 from pathlib import Path
 
+from earam_stress.conditions import build_rationale_shuffle_condition, shuffle_rationale_pairs
 from earam_stress.io import export_earam, import_earam, read_lines
-from earam_stress.metrics import classification_metrics, summarize_records
+from earam_stress.metrics import classification_metrics, paired_bootstrap_macro_f1, summarize_records
 from earam_stress.mr2 import ascii_suffix_start, select_earam_subset
 from earam_stress.perturb import perturb_records
+from earam_stress.provenance import file_record, runtime_record
 from earam_stress.scoring import filter_records, rationale_score
 from earam_stress.splits import make_splits, validate_split_dir
 
@@ -14,12 +17,14 @@ from earam_stress.splits import make_splits, validate_split_dir
 RECORDS = [
     {
         "id": "0",
+        "label": 0,
         "caption": "A chart shows unemployment falling after the election.",
         "rationale_1": "The chart shows a lower unemployment rate. The image supports the caption.",
         "rationale_2": "The visual evidence is consistent with the text, so the report appears reliable.",
     },
     {
         "id": "1",
+        "label": 1,
         "caption": "A child is shown in snow while the caption discusses unemployment.",
         "rationale_1": "The image depicts a child and provides no evidence for the economic claim.",
         "rationale_2": "The photo does not support the caption, so the pairing may be misleading.",
@@ -28,6 +33,73 @@ RECORDS = [
 
 
 class ToolkitTests(unittest.TestCase):
+    def test_provenance_records_file_hash_and_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "artifact.txt"
+            target.write_text("auditable\n", encoding="utf-8")
+            record = file_record(target)
+            self.assertEqual(record["bytes"], 10)
+            self.assertEqual(len(record["sha256"]), 64)
+            runtime = runtime_record()
+            self.assertIn("python", runtime)
+            self.assertIn("platform", runtime)
+
+    def test_within_label_shuffle_moves_pairs_without_fixed_points(self):
+        records = [
+            {
+                "id": str(index),
+                "label": index // 3,
+                "rationale_1": f"first-{index}",
+                "rationale_2": f"second-{index}",
+            }
+            for index in range(6)
+        ]
+        shuffled = shuffle_rationale_pairs(records, seed=19, mode="within-label")
+        self.assertEqual(shuffled, shuffle_rationale_pairs(records, seed=19, mode="within-label"))
+        source = {record["id"]: record for record in records}
+        for recipient in shuffled:
+            donor_id = recipient["rationale_shuffle"]["donor_id"]
+            donor = source[donor_id]
+            self.assertNotEqual(recipient["id"], donor_id)
+            self.assertEqual(recipient["label"], donor["label"])
+            self.assertEqual(
+                (recipient["rationale_1"], recipient["rationale_2"]),
+                (donor["rationale_1"], donor["rationale_2"]),
+            )
+
+        with self.assertRaisesRegex(ValueError, "fewer than two"):
+            shuffle_rationale_pairs(records[:4], seed=19, mode="within-label")
+
+    def test_shuffle_condition_writes_aligned_outputs_and_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dataset = root / "test.json"
+            first = root / "a1.txt"
+            second = root / "a2.txt"
+            dataset.write_text(
+                json.dumps(
+                    {
+                        str(index): {"caption": f"caption-{index}", "label": index // 2}
+                        for index in range(4)
+                    }
+                ),
+                encoding="utf-8",
+            )
+            first.write_text("a\nb\nc\nd\n", encoding="utf-8")
+            second.write_text("A\nB\nC\nD\n", encoding="utf-8")
+            report = build_rationale_shuffle_condition(
+                dataset, first, second, root / "condition", seed=7
+            )
+            self.assertEqual(report["mode"], "within-label")
+            self.assertEqual(report["fixed_points"], 0)
+            self.assertEqual(len(read_lines(root / "condition" / "analysis_1.txt")), 4)
+            self.assertEqual(len(read_lines(root / "condition" / "analysis_2.txt")), 4)
+            self.assertEqual(
+                json.loads((root / "condition" / "manifest.json").read_text(encoding="utf-8")),
+                report,
+            )
+            self.assertEqual(len(report["inputs"]["dataset_json"]["sha256"]), 64)
+
     def test_pilot_summary_deltas_are_consistent(self):
         summary = Path(__file__).resolve().parents[1] / "docs" / "results_summary.csv"
         with summary.open(encoding="utf-8", newline="") as handle:
@@ -69,6 +141,23 @@ class ToolkitTests(unittest.TestCase):
         self.assertEqual(metrics["accuracy"], 0.75)
         self.assertGreater(metrics["macro_f1"], 0)
         self.assertLess(metrics["macro_f1"], 1)
+
+    def test_paired_bootstrap_aligns_ids_and_is_deterministic(self):
+        clean = [
+            {"id": str(index), "label": label, "prediction": prediction}
+            for index, (label, prediction) in enumerate([(0, 0), (0, 0), (1, 1), (1, 1)])
+        ]
+        candidate = [
+            {"id": "2", "label": 1, "prediction": 0},
+            {"id": "0", "label": 0, "prediction": 0},
+            {"id": "3", "label": 1, "prediction": 1},
+            {"id": "1", "label": 0, "prediction": 1},
+        ]
+        first = paired_bootstrap_macro_f1(clean, candidate, samples=100, seed=5)
+        second = paired_bootstrap_macro_f1(clean, candidate, samples=100, seed=5)
+        self.assertEqual(first, second)
+        self.assertLess(first["macro_f1_delta"], 0)
+        self.assertEqual(first["records"], 4)
 
     def test_line_aligned_adapter_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:

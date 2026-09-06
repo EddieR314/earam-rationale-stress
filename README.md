@@ -60,6 +60,8 @@ Evidence and scope:
 - Transparent heuristic reliability baseline using relevance, evidence density, completeness, cross-rationale verdict consistency, and penalties.
 - Export back to the exact two-file format expected by EARAM.
 - Text-level stress-test summaries and classification metrics for EARAM predictions.
+- Fixed-point-free cross-sample and within-label rationale-pair shuffle controls with donor manifests.
+- Paired bootstrap confidence intervals for clean-versus-condition Macro-F1 differences.
 - A reproducible command that reconstructs EARAM's 2,558/319 English binary MR2 subset.
 - An 8 GB VRAM workflow that streams/selectively extracts MR2, caches CLIP-Large features in
   FP16, trains the released VLR with gradient accumulation, and evaluates corrupted conditions
@@ -258,6 +260,39 @@ Macro-F1, and evaluates the internal test partition once. Repeat for seeds `42` 
 
 These are **EARAM-style controlled robustness experiments**, not reproductions of the paper's
 official MR2 score.
+
+## Decisive shuffle control
+
+Generate a deterministic rationale-pair condition with no self-assignments. The default
+`within-label` mode preserves each recipient's class while breaking sample-level correspondence;
+`cross-sample` reproduces the less controlled unrestricted shuffle.
+
+```bash
+earam-stress shuffle-rationales \
+  --dataset-json runs/mr2-earam/dataset_merge/en_train.json \
+  --analysis-1 /path/to/EARAM/MR2_en_train_analysis_1.txt \
+  --analysis-2 /path/to/EARAM/MR2_en_train_analysis_2.txt \
+  --mode within-label --seed 13 \
+  --output-dir runs/rationales/within-label-seed13
+```
+
+Both rationale channels move together as one pair. The output directory contains the two aligned
+analysis files plus `manifest.json`, which records the donor mapping, input SHA-256 hashes, seed,
+label counts, and fixed-point count. Precompute a temporary feature cache from those files and
+evaluate it with the corresponding frozen clean checkpoint. The cached trainer now writes a
+`run_manifest.json` containing exact arguments, code revisions, runtime versions, input hashes,
+checkpoint hash, and prediction/result hashes.
+
+After evaluating a condition, compare its sample-level predictions with the corresponding clean
+run. Pairing is by record ID, so a reordered JSONL file cannot silently invalidate the comparison.
+
+```bash
+earam-stress compare-predictions \
+  --clean runs/earam/seed13/test_predictions.jsonl \
+  --candidate runs/conditions/within-label-seed13/test_predictions.jsonl \
+  --samples 2000 --seed 42 \
+  --output runs/conditions/within-label-seed13/paired_bootstrap.json
+```
 
 ## Minimum experiment matrix
 

@@ -5,7 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+from earam_stress.provenance import file_record, git_revision, runtime_record
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -133,11 +137,20 @@ def main() -> None:
 
     manifest = {
         "scope": "frozen CLIP token cache for low-memory EARAM training",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "command": sys.argv,
+        "code_commit": git_revision(Path(__file__).resolve().parents[1]),
+        "runtime": runtime_record(torch),
         "clip": args.clip,
         "dtype": "float16" if use_fp16 else "float32",
         "records": len(records),
         "completed": completed,
         "estimated_full_cache_gib": 1.9,
+        "inputs": {
+            "dataset_json": file_record(args.dataset_json),
+            "analysis_1": file_record(args.analysis_1),
+            "analysis_2": file_record(args.analysis_2),
+        },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(manifest, indent=2))

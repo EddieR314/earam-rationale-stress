@@ -100,6 +100,21 @@ restart per seed, so let one seed finish before shutting down.
 
 ## 6. Evaluate one corrupted-rationale condition
 
+For the decisive same-label shuffle control, generate an aligned rationale pair and an auditable
+donor manifest:
+
+```powershell
+earam-stress shuffle-rationales `
+  --dataset-json data\mr2-lite\dataset_merge\en_train.json `
+  --analysis-1 vendor\EARAM\LVLMs_analysis\MR2_analyses\MR2_en_train_analysis_1.txt `
+  --analysis-2 vendor\EARAM\LVLMs_analysis\MR2_analyses\MR2_en_train_analysis_2.txt `
+  --mode within-label --seed 13 `
+  --output-dir runs\rationales\within-label-seed13
+```
+
+The two rationale channels are shuffled together, every donor has the same label as its recipient,
+and the generated `manifest.json` records a fixed-point-free donor mapping and input hashes.
+
 Create and export one corrupted rationale pair, for example a 50% conclusion-flip condition:
 
 ```powershell
@@ -134,6 +149,18 @@ python scripts\train_cached_earam.py `
   --output-dir runs\conditions\condition-name\seed13
 ```
 
-This changes the rationale input while keeping the trained detector fixed. Save `result.json`,
+Calculate a paired confidence interval against the matching clean run:
+
+```powershell
+earam-stress compare-predictions `
+  --clean runs\earam\seed13\test_predictions.jsonl `
+  --candidate runs\conditions\condition-name\seed13\test_predictions.jsonl `
+  --samples 2000 --seed 42 `
+  --output runs\conditions\condition-name\seed13\paired_bootstrap.json
+```
+
+This changes the rationale input while keeping the trained detector fixed. Keep `result.json`,
+`test_predictions.jsonl`, and `run_manifest.json`; the latter records code revisions, runtime
+versions, arguments, and artifact hashes. Then
 delete `cache\condition`, and reuse that temporary directory for the next condition to avoid
 filling the system disk. Keep `cache\clip-large`, because it is the clean baseline cache.

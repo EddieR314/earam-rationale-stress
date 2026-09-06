@@ -51,11 +51,20 @@ For every model seed and intervention seed, retain:
 6. condition generator, rate, severity, target channel, and random seed;
 7. paired bootstrap confidence intervals against the corresponding clean predictions.
 
+The cached-feature scripts now generate `run_manifest.json` with code revisions, runtime details,
+input and checkpoint hashes, and output hashes. The `compare-predictions` command computes paired
+bootstrap intervals after aligning predictions by record ID. These additions apply to future runs;
+they do not reconstruct artifacts missing from the original pilot.
+
 ## Decisive next control
 
-Run **within-label rationale shuffling** before making a semantic-alignment claim. Unrestricted
+The repository now implements auditable **within-label rationale-pair shuffling** with zero fixed
+points, donor mappings, and input hashes. Run it before making a semantic-alignment claim. Unrestricted
 cross-sample shuffling breaks sample correspondence but may also alter label-associated signals.
 Within-label shuffling preserves the label distribution while breaking sample-level correspondence.
+
+The implementation is available through `earam-stress shuffle-rationales`; no result is reported
+until the generated condition is evaluated against the frozen clean checkpoints.
 
 After that control, test a lightweight image-caption-rationale alignment gate on exactly the same
 frozen checkpoints. A useful mitigation must improve the shuffled condition without materially

@@ -1,0 +1,57 @@
+{
+  "scope": "frozen CLIP token cache for low-memory EARAM training",
+  "created_at_utc": "2026-09-06T17:27:08.381128+00:00",
+  "command": [
+    "scripts\\precompute_clip_features.py",
+    "--dataset-json",
+    "data\\mr2-lite\\dataset_merge\\en_train.json",
+    "--analysis-1",
+    "runs\\rationales\\within-label-seed42\\analysis_1.txt",
+    "--analysis-2",
+    "runs\\rationales\\within-label-seed42\\analysis_2.txt",
+    "--image-root",
+    "data\\mr2-lite\\dataset_merge",
+    "--output-dir",
+    "cache\\within-label-seed42",
+    "--resume"
+  ],
+  "code_commit": "689cc7162498f87d88344894f2aa6f6daeced239",
+  "runtime": {
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26100-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "torch": "2.11.0+cu128",
+      "transformers": "5.16.1",
+      "Pillow": "12.3.0"
+    },
+    "cuda": {
+      "available": true,
+      "runtime": "12.8",
+      "cudnn": 91900,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU"
+    }
+  },
+  "clip": "openai/clip-vit-large-patch14",
+  "dtype": "float16",
+  "records": 2558,
+  "completed": 2558,
+  "estimated_full_cache_gib": 1.9,
+  "inputs": {
+    "dataset_json": {
+      "path": "<PROJECT_ROOT>\\data\\mr2-lite\\dataset_merge\\en_train.json",
+      "bytes": 715460,
+      "sha256": "98addda532448c231d0b7e11a9de4f079795545f197139156e3b5a906c413a66"
+    },
+    "analysis_1": {
+      "path": "<PROJECT_ROOT>\\runs\\rationales\\within-label-seed42\\analysis_1.txt",
+      "bytes": 2813455,
+      "sha256": "40ee6449839f99158a198b598dad8b65e5ea8e664b9e8ac36f0c6393022b7e16"
+    },
+    "analysis_2": {
+      "path": "<PROJECT_ROOT>\\runs\\rationales\\within-label-seed42\\analysis_2.txt",
+      "bytes": 1340971,
+      "sha256": "f5a78cbac54e7c560377a1cf83d14203f528b7e41dde3933a15853332fb1f911"
+    }
+  }
+}

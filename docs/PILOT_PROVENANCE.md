@@ -33,13 +33,30 @@ default unchanged, so these values describe the intended protocol rather than a 
 ## Artifacts not retained
 
 The original per-run `result.json`, prediction JSONL files, training histories, checkpoint hashes,
-package lockfile, and GPU/software metadata were not retained in this repository. The published
-means therefore cannot yet be reconstructed solely from the repository.
+package lockfile, and GPU/software metadata for the **earlier unrestricted-shuffle pilot** were not
+retained. Its published means therefore cannot be reconstructed solely from the repository.
 
 No missing per-run values have been inferred from the means. The aggregate result should be cited
 as a **preliminary internal pilot** until a clean rerun archives the complete artifacts.
 
-## Required archive for the next run
+## Archived within-label follow-up
+
+The later within-label control satisfies the relevant archive requirements below. The repository
+retains all nine condition results and predictions, all three clean results and predictions, run
+manifests, cache manifests, donor manifests, and paired-bootstrap outputs under
+[`../results/within-label/raw`](../results/within-label/raw). Exact aggregate values are generated
+from those files in [`within_label_results.csv`](within_label_results.csv).
+Machine-specific repository paths were replaced with `<PROJECT_ROOT>` before publication. Hashes
+for the sanitized result and cache-manifest files were then refreshed in their referring run
+manifests; prediction contents and their original SHA-256 values were unchanged.
+
+The archived Git revision is `689cc7162498f87d88344894f2aa6f6daeced239`. All three rationale
+manifests report 2,558 records, zero fixed points, and same-label donor assignment. Each condition
+evaluation reports 255 test records and no missing cached features. The nine bootstrap files were
+regenerated from the archived clean and condition predictions with 2,000 resamples and seed 42;
+the resulting JSON values matched exactly.
+
+## Archive requirements
 
 For every model seed and intervention seed, retain:
 
@@ -51,20 +68,19 @@ For every model seed and intervention seed, retain:
 6. condition generator, rate, severity, target channel, and random seed;
 7. paired bootstrap confidence intervals against the corresponding clean predictions.
 
-The cached-feature scripts now generate `run_manifest.json` with code revisions, runtime details,
-input and checkpoint hashes, and output hashes. The `compare-predictions` command computes paired
-bootstrap intervals after aligning predictions by record ID. These additions apply to future runs;
-they do not reconstruct artifacts missing from the original pilot.
+The cached-feature scripts generate `run_manifest.json` with code revisions, runtime details, input
+and checkpoint hashes, and output hashes. The `compare-predictions` command computes paired
+bootstrap intervals after aligning predictions by record ID. These additions support the archived
+within-label run; they do not reconstruct artifacts missing from the original pilot.
 
-## Decisive next control
+## Completed decisive control
 
-The repository now implements auditable **within-label rationale-pair shuffling** with zero fixed
-points, donor mappings, and input hashes. Run it before making a semantic-alignment claim. Unrestricted
-cross-sample shuffling breaks sample correspondence but may also alter label-associated signals.
-Within-label shuffling preserves the label distribution while breaking sample-level correspondence.
-
-The implementation is available through `earam-stress shuffle-rationales`; no result is reported
-until the generated condition is evaluated against the frozen clean checkpoints.
+The repository implements and now reports auditable **within-label rationale-pair shuffling** with
+zero fixed points, donor mappings, and input hashes. Unrestricted cross-sample shuffling breaks
+sample correspondence but may also alter label-associated signals. Within-label shuffling preserves
+the label while breaking sample-level correspondence. It did not reduce mean Macro-F1 in the
+archived 3 × 3 run, so the earlier unrestricted-shuffle drop cannot be attributed to sample-level
+semantic mismatch alone.
 
 After that control, test a lightweight image-caption-rationale alignment gate on exactly the same
 frozen checkpoints. A useful mitigation must improve the shuffled condition without materially

@@ -1,0 +1,81 @@
+{
+  "created_at_utc": "2026-09-06T17:29:23.392256+00:00",
+  "command": [
+    "scripts\\train_cached_earam.py",
+    "--earam-repo",
+    "vendor\\EARAM",
+    "--split-dir",
+    "runs\\internal-splits\\seed13",
+    "--feature-dir",
+    "cache\\within-label-seed42",
+    "--seed",
+    "13",
+    "--checkpoint-in",
+    "runs\\earam\\seed13\\best.pt",
+    "--output-dir",
+    "runs\\conditions\\within-label-shuffle42\\model-seed13"
+  ],
+  "arguments": {
+    "earam_repo": "vendor\\EARAM",
+    "split_dir": "runs\\internal-splits\\seed13",
+    "feature_dir": "cache\\within-label-seed42",
+    "seed": 13,
+    "epochs": 35,
+    "gradient_accumulation": 8,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "device": "cuda",
+    "output_dir": "runs\\conditions\\within-label-shuffle42\\model-seed13",
+    "checkpoint_in": "runs\\earam\\seed13\\best.pt",
+    "dry_run": false
+  },
+  "code": {
+    "earam_rationale_stress_commit": "689cc7162498f87d88344894f2aa6f6daeced239",
+    "earam_commit": "bd6cd60a43f63f1c5656c7a58c134bda78040393"
+  },
+  "runtime": {
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26100-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "torch": "2.11.0+cu128",
+      "transformers": "5.16.1",
+      "Pillow": "12.3.0"
+    },
+    "cuda": {
+      "available": true,
+      "runtime": "12.8",
+      "cudnn": 91900,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU"
+    }
+  },
+  "inputs": {
+    "split_manifest": {
+      "path": "<PROJECT_ROOT>\\runs\\internal-splits\\seed13\\split_manifest.json",
+      "bytes": 37647,
+      "sha256": "8dc7b600147cf009bae3dc169b0482fc8e488f4df1b20b948621fe4f41bb6905"
+    },
+    "feature_manifest": {
+      "path": "<PROJECT_ROOT>\\cache\\within-label-seed42\\manifest.json",
+      "bytes": 1872,
+      "sha256": "ccf13b24b417db15d7f145862b0174a44f52ead52a484d99445ce64a291fdd41"
+    },
+    "checkpoint_in": {
+      "path": "<PROJECT_ROOT>\\runs\\earam\\seed13\\best.pt",
+      "bytes": 68543539,
+      "sha256": "ef1007a33012bec2565a4514ee8e7b8762b74b5b01d06dd5cf200a5aed54f25a"
+    }
+  },
+  "artifacts": {
+    "result": {
+      "path": "<PROJECT_ROOT>\\runs\\conditions\\within-label-shuffle42\\model-seed13\\result.json",
+      "bytes": 388,
+      "sha256": "6ed82523e40eeb1d6d4a95ba9b97ec75e46dbd87886fb3ecfd356449b93cb6fd"
+    },
+    "test_predictions": {
+      "path": "<PROJECT_ROOT>\\runs\\conditions\\within-label-shuffle42\\model-seed13\\test_predictions.jsonl",
+      "bytes": 27286,
+      "sha256": "c884412d2df83cc8c2fd9feaabc0daf5ac580c179914abc23361a13b72a2bab0"
+    }
+  }
+}

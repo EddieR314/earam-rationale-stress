@@ -1,0 +1,12 @@
+{
+  "records": 255,
+  "bootstrap_samples": 2000,
+  "seed": 42,
+  "clean_macro_f1": 0.9404841291010937,
+  "candidate_macro_f1": 0.9661489446435683,
+  "macro_f1_delta": 0.025664815542474573,
+  "macro_f1_delta_ci95": [
+    0.008387713905680395,
+    0.0485495970503462
+  ]
+}

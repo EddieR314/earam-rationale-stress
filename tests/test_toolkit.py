@@ -2,6 +2,7 @@ import tempfile
 import unittest
 import csv
 import json
+import importlib.util
 from pathlib import Path
 
 from earam_stress.conditions import build_rationale_shuffle_condition, shuffle_rationale_pairs
@@ -33,6 +34,63 @@ RECORDS = [
 
 
 class ToolkitTests(unittest.TestCase):
+    def test_archive_sanitizer_replaces_nested_paths(self):
+        script = Path(__file__).resolve().parents[1] / "scripts" / "sanitize_within_label_archive.py"
+        spec = importlib.util.spec_from_file_location("archive_sanitizer", script)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        payload = {"path": "C:\\Users\\person\\project\\file.json", "nested": ["unchanged"]}
+        observed = module.replace_strings(payload, "C:\\Users\\person\\project", "<PROJECT_ROOT>")
+        self.assertEqual(observed["path"], "<PROJECT_ROOT>\\file.json")
+        self.assertEqual(observed["nested"], ["unchanged"])
+
+    def test_within_label_matrix_summary_validates_and_writes_outputs(self):
+        script = Path(__file__).resolve().parents[1] / "scripts" / "summarize_within_label_results.py"
+        spec = importlib.util.spec_from_file_location("within_label_summary", script)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for shuffle_seed in (13, 42):
+                for model_seed, clean in ((13, 0.8), (42, 0.9)):
+                    target = root / f"within-label-shuffle{shuffle_seed}" / f"model-seed{model_seed}"
+                    target.mkdir(parents=True)
+                    candidate = clean + shuffle_seed / 10000
+                    payload = {
+                        "records": 10,
+                        "clean_macro_f1": clean,
+                        "candidate_macro_f1": candidate,
+                        "macro_f1_delta": candidate - clean,
+                        "macro_f1_delta_ci95": [-0.01, 0.03],
+                    }
+                    (target / "paired_bootstrap.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+            rows = module.load_matrix(root, [13, 42], [13, 42])
+            self.assertEqual(len(rows), 4)
+            flat = root / "flat"
+            flat.mkdir()
+            for shuffle_seed in (13, 42):
+                for model_seed in (13, 42):
+                    source = (
+                        root
+                        / f"within-label-shuffle{shuffle_seed}"
+                        / f"model-seed{model_seed}"
+                        / "paired_bootstrap.json"
+                    )
+                    (flat / f"shuffle{shuffle_seed}-model{model_seed}-bootstrap.json").write_text(
+                        source.read_text(encoding="utf-8"), encoding="utf-8"
+                    )
+            self.assertEqual(module.load_matrix(root, [13, 42], [13, 42], flat), rows)
+            csv_target = root / "summary.csv"
+            markdown_target = root / "summary.md"
+            module.write_csv(rows, csv_target)
+            module.write_markdown(rows, markdown_target)
+            self.assertIn("shuffle_seed", csv_target.read_text(encoding="utf-8"))
+            self.assertIn("Interpretation boundary", markdown_target.read_text(encoding="utf-8"))
+
     def test_provenance_records_file_hash_and_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "artifact.txt"

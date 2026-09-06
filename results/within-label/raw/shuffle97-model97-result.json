@@ -1,0 +1,16 @@
+{
+  "scope": "fixed clean EARAM-style checkpoint evaluated on a cached-feature condition",
+  "seed": 97,
+  "checkpoint": "<PROJECT_ROOT>\\runs\\earam\\seed97\\best.pt",
+  "checkpoint_epoch": 26,
+  "test": {
+    "accuracy": 0.9568627450980393,
+    "macro_f1": 0.9533471933471933
+  },
+  "inputs": {
+    "train": 2047,
+    "validation": 256,
+    "test": 255,
+    "missing_features": 0
+  }
+}

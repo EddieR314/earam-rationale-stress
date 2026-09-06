@@ -1,6 +1,31 @@
 # Results
 
-## EARAM-style fixed-checkpoint pilot
+## Archived within-label shuffle control
+
+We reran three low-memory EARAM-style models on stratified 80/10/10 splits of the 2,558 MR2 rows
+for which both released rationales are available. Model seeds were 13, 42, and 97. Each frozen clean
+checkpoint was evaluated under three fixed-point-free rationale permutations. Both rationale
+channels moved together, and every donor had the same binary label as its recipient.
+
+| Condition | Mean test Macro-F1 | Change from clean | Evaluations |
+|---|---:|---:|---:|
+| Clean rationales | 0.9333 | — | 3 checkpoints |
+| Within-label shuffled rationale pairs | 0.9517 | +0.0184 | 3 checkpoints × 3 permutations |
+
+The full per-run table is in [`docs/WITHIN_LABEL_RESULTS.md`](docs/WITHIN_LABEL_RESULTS.md), with
+unrounded values in [`docs/within_label_results.csv`](docs/within_label_results.csv). All prediction
+files and provenance manifests are retained under [`results/within-label/raw`](results/within-label/raw).
+The nine paired-bootstrap files were independently regenerated from the archived predictions and
+matched the uploaded outputs exactly.
+
+This control changes the earlier interpretation. Same-label shuffling breaks sample-level semantic
+correspondence but preserves label-associated language. It did not hurt performance here. Therefore,
+the earlier unrestricted-shuffle drop cannot be attributed to semantic misalignment alone. The
+positive mean change is not itself a general improvement claim: only 2 of 9 individual 95% paired
+bootstrap intervals were strictly above zero, and the experiment remains an internal EARAM-style
+run rather than an official-score reproduction.
+
+## Earlier unarchived fixed-checkpoint pilot
 
 Three low-memory EARAM-style models were trained on stratified 80/10/10 splits of the 2,558 MR2
 rows for which both released rationales are available. Model seeds were 13, 42, and 97. CLIP-Large
@@ -15,14 +40,15 @@ run on an RTX 5060 Laptop GPU with 8 GB VRAM.
 | Rationale pairs shuffled across samples | 0.9054 | −0.0139 |
 
 Every intervention was evaluated with the corresponding clean checkpoint fixed. The shuffled
-mean covers three model seeds × three independent permutations. The result supports a narrow claim:
-this implementation is sensitive to cross-sample rationale mismatch, and mismatch was more harmful
-than absence in the pilot. It does not yet isolate semantic misalignment from label-associated
-signals; within-label shuffling is the next required control.
+mean covers three model seeds × three independent permutations. At the time, the result appeared
+consistent with sensitivity to cross-sample rationale mismatch. The archived within-label control
+above does not reproduce that direction and shows that the earlier drop did not isolate semantic
+mismatch from label-associated signals.
 
 The original per-run outputs were not retained in this repository. See
 [`docs/PILOT_PROVENANCE.md`](docs/PILOT_PROVENANCE.md) for the audit status and required rerun
-archive. These values are preliminary internal results, not official EARAM reproduction numbers.
+archive. These historical values remain preliminary internal results, not official EARAM
+reproduction numbers, and are not pooled with the archived rerun above.
 
 ## Earlier text-only feasibility diagnostic
 

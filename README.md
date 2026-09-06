@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/EddieR314/earam-rationale-stress/actions/workflows/tests.yml/badge.svg)](https://github.com/EddieR314/earam-rationale-stress/actions/workflows/tests.yml)
 
-![Macro-F1 change under rationale interventions](docs/rationale_reliability_results.png)
+![Within-label rationale shuffle results](docs/within_label_shuffle_results.png)
 
 A reproducible reliability audit of **EARAM** (*From Predictions to Analyses: Rationale-Augmented Fake News Detection with Large Vision-Language Models*). It tests how an EARAM-style detector responds when LVLM analyses are absent, assigned to the wrong sample, incomplete, irrelevant, contradictory, unsupported, or given a flipped conclusion.
 
@@ -10,16 +10,21 @@ This repository does **not** claim to reproduce EARAM's published numbers. It co
 
 ## Result in 30 seconds
 
-| Fixed-checkpoint condition | Mean test Macro-F1 | Change from clean |
+| Archived fixed-checkpoint condition | Mean test Macro-F1 | Change from clean |
 |---|---:|---:|
-| Clean rationales | 0.9193 | — |
-| Incorrect verdict prepended to 50% of rationale fields | 0.9207 | +0.0014 |
-| Both rationales removed | 0.9108 | −0.0086 |
-| Rationale pairs shuffled across samples | 0.9054 | **−0.0139** |
+| Clean rationales | 0.9333 | — |
+| Rationale pairs shuffled within the same label | 0.9517 | **+0.0184** |
 
-**Preliminary finding.** In this internal setup, cross-sample rationale mismatch was more damaging than removing both rationales. A short incorrect verdict did not reduce mean performance. The result is consistent with the model using a modest amount of sample-specific rationale information, and inconsistent with a simple strategy of copying one local verdict sentence.
+**Follow-up finding.** Same-label shuffling breaks sample-level rationale correspondence while
+preserving label-associated rationale signals. Across three frozen model checkpoints and three
+fixed-point-free shuffle permutations, it did not reduce Macro-F1; the mean instead increased by
+0.0184. Only 2 of 9 individual paired-bootstrap intervals were strictly above zero, so the increase
+itself should not be treated as a general performance improvement.
 
-**Important boundary.** Random cross-sample shuffling can change both semantic alignment and label-associated signals. The next decisive control is **within-label shuffling**, followed by a lightweight image-caption-rationale alignment gate. Until then, the result is evidence of sensitivity to cross-sample mismatch—not proof that semantic misalignment alone caused the drop.
+**Interpretation.** This result overturns the simple interpretation of the earlier unrestricted
+shuffle pilot: its drop cannot be attributed to sample-level semantic misalignment alone. A likely
+confound is label-associated information retained or disrupted by different shuffle designs. This
+does not establish that rationales are useless, nor does it reproduce EARAM's official result.
 
 ## Research question
 
@@ -28,20 +33,23 @@ This repository does **not** claim to reproduce EARAM's published numbers. It co
 ## Internal pilot protocol
 
 On the 2,558 public MR2 training rows, we trained three low-memory EARAM-style models on
-stratified 80/10/10 splits (seeds 13, 42, and 97), then evaluated frozen clean checkpoints under
-controlled rationale interventions. Clean test Macro-F1 was **0.9193** on average. Removing both
-rationales reduced it to **0.9108** (−0.0086), while pairing each sample with unrelated rationales
-reduced it to **0.9054** on average across three model seeds and three shuffle permutations
-(−0.0139). A short incorrect verdict prepended to 50% of rationale fields did not reduce mean
-Macro-F1.
+stratified 80/10/10 splits (seeds 13, 42, and 97), then evaluated frozen clean checkpoints after
+moving both rationale channels together to a different sample of the same class. Every permutation
+had zero fixed points. Clean test Macro-F1 was **0.9333** on average; within-label shuffling produced
+**0.9517** across the 3 × 3 evaluation matrix (mean change **+0.0184**).
 
-The shuffled result averages nine evaluations: three independently trained models × three shuffle
-permutations. These are internal EARAM-style results—not a reproduction of the paper's official MR2
-result and not a claim about the official model generally.
+All nine result files, prediction files, paired-bootstrap outputs, runtime manifests, cache
+manifests, and donor manifests are archived under `results/within-label/raw`. These are internal
+EARAM-style results—not a reproduction of the paper's official MR2 result and not a claim about the
+official model generally. The earlier unrestricted-shuffle pilot is retained in `RESULTS.md` as an
+unarchived historical result and is not pooled with this rerun. User-specific local paths in the
+archive are replaced with `<PROJECT_ROOT>` while linked hashes remain internally consistent.
 
 Evidence and scope:
 
 - [`docs/LUO_LAB_ONE_PAGE.md`](docs/LUO_LAB_ONE_PAGE.md): concise bilingual research brief.
+- [`docs/WITHIN_LABEL_RESULTS.md`](docs/WITHIN_LABEL_RESULTS.md): exact 3 × 3 follow-up table and interpretation boundary.
+- [`docs/within_label_results.csv`](docs/within_label_results.csv): machine-readable per-run metrics.
 - [`docs/results_summary.csv`](docs/results_summary.csv): machine-readable aggregate results.
 - [`docs/PILOT_PROVENANCE.md`](docs/PILOT_PROVENANCE.md): protocol, available evidence, and missing artifacts.
 - [`RESULTS.md`](RESULTS.md): EARAM-style pilot plus the earlier text-only feasibility diagnostic.
@@ -261,7 +269,7 @@ Macro-F1, and evaluates the internal test partition once. Repeat for seeds `42` 
 These are **EARAM-style controlled robustness experiments**, not reproductions of the paper's
 official MR2 score.
 
-## Decisive shuffle control
+## Within-label shuffle control
 
 Generate a deterministic rationale-pair condition with no self-assignments. The default
 `within-label` mode preserves each recipient's class while breaking sample-level correspondence;
@@ -292,6 +300,27 @@ earam-stress compare-predictions \
   --candidate runs/conditions/within-label-seed13/test_predictions.jsonl \
   --samples 2000 --seed 42 \
   --output runs/conditions/within-label-seed13/paired_bootstrap.json
+```
+
+After completing the 3 × 3 matrix, generate the exact per-run CSV and Markdown report directly
+from the paired-bootstrap files:
+
+```bash
+python scripts/summarize_within_label_results.py \
+  --conditions-root runs/conditions \
+  --output-csv docs/within_label_results.csv \
+  --output-markdown docs/WITHIN_LABEL_RESULTS.md
+python scripts/generate_within_label_figure.py
+```
+
+The committed follow-up snapshot uses `--handoff-dir results/within-label/raw` to rebuild the same
+outputs from the archived flat artifact bundle.
+
+Validate hashes, donor mappings, record counts, and all nine recomputed bootstrap outputs with:
+
+```bash
+PYTHONPATH=src python scripts/validate_within_label_archive.py \
+  --archive-dir results/within-label/raw
 ```
 
 ## Minimum experiment matrix
